@@ -1,0 +1,167 @@
+# general settings
+name: pde
+model_type: PriorDegradationEstimatorModel
+num_gpu: 1  # set num_gpu: 0 for cpu mode
+manual_seed: 10
+scale: 1
+
+# dataset and data loader settings
+datasets:
+  train_b30:
+    name: aapm_b30_train
+    type: PrioriDegradationEstimatorDataset
+    dataroot_gt: /data/zhiyi/data/aapm_1mm_slice_window_-1000_200/1mm_B30/fd/train/hr
+    dataroot_lq: /data/zhiyi/data/aapm_1mm_slice_window_-1000_200/1mm_B30/qd/train/hr
+
+    slice_num: 8
+    patch_num: 8
+
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+    gt_size: 128
+    use_flip: true
+    use_rot: true
+
+    # data loader
+    use_shuffle: true
+    num_worker_per_gpu: 6
+    batch_size_per_gpu: 1
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+
+  train_d45:
+    name: aapm_d45_train
+    type: PrioriDegradationEstimatorDataset
+    dataroot_gt: /data/zhiyi/data/aapm_1mm_slice_window_-1000_200/1mm_D45/fd/train/hr
+    dataroot_lq: /data/zhiyi/data/aapm_1mm_slice_window_-1000_200/1mm_D45/qd/train/hr
+
+    slice_num: 8
+    patch_num: 8
+
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+    gt_size: 128
+    use_flip: true
+    use_rot: true
+
+    # data loader
+    use_shuffle: true
+    num_worker_per_gpu: 6
+    batch_size_per_gpu: 1
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+
+  val_b30:
+    name: aapm_b30_val
+    type: PrioriDegradationEstimatorDataset
+    dataroot_gt: /data/zhiyi/data/aapm_1mm_slice_window_-1000_200/1mm_B30/fd/val/hr
+    dataroot_lq: /data/zhiyi/data/aapm_1mm_slice_window_-1000_200/1mm_B30/qd/val/hr
+
+    slice_num: 8
+    patch_num: 8
+
+    gt_size: 128
+    use_flip: false
+    use_rot: false
+
+    io_backend:
+      type: disk
+
+  val_d45:
+    name: aapm_d45_val
+    type: PrioriDegradationEstimatorDataset
+    dataroot_gt: /data/zhiyi/data/aapm_1mm_slice_window_-1000_200/1mm_D45/fd/val/hr
+    dataroot_lq: /data/zhiyi/data/aapm_1mm_slice_window_-1000_200/1mm_D45/qd/val/hr
+
+    slice_num: 8
+    patch_num: 8
+
+    gt_size: 128
+    use_flip: false
+    use_rot: false
+
+    io_backend:
+      type: disk
+
+# network structures
+network_g:
+  type: PriorDegradationEstimator
+
+# path
+path:
+  pretrain_network_g: ~
+  strict_load_g: true
+  resume_state: ~
+
+# training settings
+train:
+  ema_decay: 0
+  optim_g:
+    type: Adam
+    lr: !!float 1e-5
+    weight_decay: 0
+    betas: [0.9, 0.99]
+
+  scheduler:
+    type: MultiStepLR
+    milestones: [20000, 40000]
+    gamma: 0.5
+
+  total_iter: 50000
+  warmup_iter: -1  # no warm up
+
+  # losses
+  distance_same_slice_opt:
+    type: L1Loss
+    loss_weight: 1.0
+    reduction: mean
+
+  distance_same_level_opt:
+    type: L1Loss
+    loss_weight: 1.0
+    reduction: mean
+
+  distance_diff_level_opt:
+    type: L1Loss
+    loss_weight: 1.0
+    reduction: mean
+
+  rank_opt:
+    type: MarginRankingLoss
+    loss_weight: 1.0
+    margin: 0.0
+
+# validation settings
+val:
+  val_freq: !!float 5e3
+  save_img: false
+
+  metrics:
+    distance_same_slice: # metric name, can be arbitrary
+      type: calculate_distance_same_slice
+
+    distance_same_level: # metric name, can be arbitrary
+      type: calculate_distance_same_level
+
+    distance_diff_level: # metric name, can be arbitrary
+      type: calculate_distance_diff_level
+
+  pbar: true
+
+# logging settings
+logger:
+  print_freq: 10
+  save_checkpoint_freq: !!float 5e3
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+# dist training settings
+dist_params:
+  backend: nccl
+  port: 29500

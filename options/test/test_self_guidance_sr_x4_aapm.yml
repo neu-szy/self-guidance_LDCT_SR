@@ -1,0 +1,72 @@
+name: self_guided_sr_x4_aapm
+model_type: SelfGuidanceModel
+scale: 4
+num_gpu: 1  # set num_gpu: 0 for cpu mode
+manual_seed: 0
+
+datasets:
+  test_b30:
+    name: aapm_b30_test
+    type: PairedSelfGuidanceDataset
+    dataroot_gt: /data/zhiyi/data/aapm_1mm_slice_window_-1000_200/1mm_B30/fd/test/hr
+    dataroot_lq: /data/zhiyi/data/aapm_1mm_slice_window_-1000_200/1mm_B30/qd/test/x4
+    dataroot_avg_coronal: /data/zhiyi/data/aapm_1mm_slice_window_-1000_200/1mm_B30/qd/test_avg/x4/avg_coronal
+    dataroot_avg_sagittal: /data/zhiyi/data/aapm_1mm_slice_window_-1000_200/1mm_B30/qd/test_avg/x4/avg_sagittal
+    dataroot_avg_axial: /data/zhiyi/data/aapm_1mm_slice_window_-1000_200/1mm_B30/qd/test_avg/x4/avg_axial
+    io_backend:
+      type: disk
+
+  test_d45:
+    name: aapm_d45_test
+    type: PairedSelfGuidanceDataset
+    dataroot_gt: /data/zhiyi/data/aapm_1mm_slice_window_-1000_200/1mm_D45/fd/test/hr
+    dataroot_lq: /data/zhiyi/data/aapm_1mm_slice_window_-1000_200/1mm_D45/qd/test/x4
+    dataroot_avg_coronal: /data/zhiyi/data/aapm_1mm_slice_window_-1000_200/1mm_D45/qd/test_avg/x4/avg_coronal
+    dataroot_avg_sagittal: /data/zhiyi/data/aapm_1mm_slice_window_-1000_200/1mm_D45/qd/test_avg/x4/avg_sagittal
+    dataroot_avg_axial: /data/zhiyi/data/aapm_1mm_slice_window_-1000_200/1mm_D45/qd/test_avg/x4/avg_axial
+    io_backend:
+      type: disk
+
+# network structures
+network_g:
+  type: SelfGuidanceSR
+  upscale: 4
+  in_channel: 1
+  out_channel: 1
+  img_size: 48
+  patch_size: 1
+  num_feat: 180
+  depths: [ 6, 6, 6, 6, 6, 6 ]
+  num_heads: [ 6, 6, 6, 6, 6, 6 ]
+  window_size: 8
+  mlp_ratio: 2.
+  drop_rate: 0.
+  attn_drop_rate: 0.
+  drop_path_rate: 0.1
+  resi_connection: '1conv'
+
+network_pde:
+  type: PriorDegradationEstimator
+
+# path
+path:
+  pretrain_network_g: ~
+  strict_load_g: true
+  resume_state: ~
+
+  pretrain_network_degradation_estimator: /home/zhiyi/code/basicsr-neu/experiments/pde/models/net_g_latest.pth
+
+# testidation settings
+test:
+  save_img: true
+  suffix: ~  # add suffix to saved images, if None, use exp name
+
+  metrics:
+    psnr: # metric name, can be arbitrary
+      type: calculate_psnr
+      crop_border: 4
+      test_y_channel: true
+    ssim:
+      type: calculate_ssim
+      crop_border: 4
+      test_y_channel: true
