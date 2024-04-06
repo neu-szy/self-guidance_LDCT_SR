@@ -182,13 +182,13 @@ class SelfGuidanceSR(nn.Module):
 
     def forward(self, x, avg_coronal=None, avg_sagittal=None, avg_axial=None, feature_pde=None):
         x_size = (x.shape[2], x.shape[3])
-        sffm = self.sgfm(avg_coronal, avg_sagittal, avg_axial, feature_pde)
-        sffm = self.patch_embed(sffm)
+        sgfm = self.sgfm(avg_coronal, avg_sagittal, avg_axial, feature_pde)
+        sgfm = self.patch_embed(sgfm)
         x = self.conv_first(x)
         x = self.patch_embed(x)
         for layer in self.layers:
             x = layer(x, x_size)
-            x += sffm
+            x += sgfm
         x = self.patch_unembed(x, x_size)
         x = self.sr_head(x)
         return x
